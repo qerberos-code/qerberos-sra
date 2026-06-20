@@ -36,7 +36,28 @@ def main():
                     "required": ["file_path"],
                 },
             },
-        }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "Write",
+                "description": "Write content to a file",
+                "parameters": {
+                    "type": "object",
+                    "required": ["file_path", "content"],
+                    "properties": {
+                        "file_path": {
+                            "type": "string",
+                            "description": "The path of the file to write to",
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "The content to write to the file",
+                        },
+                    },
+                },
+            },
+        },
     ]
 
     messages = [{"role": "user", "content": args.p}]
@@ -76,6 +97,10 @@ def execute_tool(name, arguments):
     if name == "Read":
         with open(arguments["file_path"], "r") as f:
             return f.read()
+    if name == "Write":
+        with open(arguments["file_path"], "w") as f:
+            f.write(arguments["content"])
+        return f"Successfully wrote to {arguments['file_path']}"
     return f"Unknown tool: {name}"
 
 
