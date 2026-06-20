@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import subprocess
 import sys
 
 from openai import OpenAI
@@ -58,6 +59,23 @@ def main():
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "Bash",
+                "description": "Execute a shell command",
+                "parameters": {
+                    "type": "object",
+                    "required": ["command"],
+                    "properties": {
+                        "command": {
+                            "type": "string",
+                            "description": "The command to execute",
+                        }
+                    },
+                },
+            },
+        },
     ]
 
     messages = [{"role": "user", "content": args.p}]
@@ -101,6 +119,14 @@ def execute_tool(name, arguments):
         with open(arguments["file_path"], "w") as f:
             f.write(arguments["content"])
         return f"Successfully wrote to {arguments['file_path']}"
+    if name == "Bash":
+        result = subprocess.run(
+            arguments["command"],
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout + result.stderr
     return f"Unknown tool: {name}"
 
 
