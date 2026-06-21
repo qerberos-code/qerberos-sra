@@ -171,8 +171,7 @@ def _scan_thread(scan_id: str, repo_path: str, output_dir: str, prompt: str | No
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     counts = _severity_counts()
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="dashboard.html", context={
         "counts": counts,
         "close_rate": _close_rate(),
         "severity_colors": SEVERITY_COLORS,
@@ -193,8 +192,7 @@ async def findings_page(
         status=status or None,
     )
     owasp_options = [r["owasp"] for r in _owasp_counts()]
-    return templates.TemplateResponse("findings.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="findings.html", context={
         "findings": findings,
         "severity_order": SEVERITY_ORDER,
         "severity_colors": SEVERITY_COLORS,
@@ -210,8 +208,7 @@ async def finding_detail(request: Request, finding_id: int):
     finding = _get_finding(finding_id)
     if not finding:
         return HTMLResponse("<p>Finding not found.</p>", status_code=404)
-    return templates.TemplateResponse("finding.html", {
-        "request": request,
+    return templates.TemplateResponse(request=request, name="finding.html", context={
         "finding": finding,
         "severity_colors": SEVERITY_COLORS,
     })
@@ -219,7 +216,7 @@ async def finding_detail(request: Request, finding_id: int):
 
 @app.get("/scan", response_class=HTMLResponse)
 async def scan_page(request: Request):
-    return templates.TemplateResponse("scan.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="scan.html", context={})
 
 
 @app.post("/scan")
