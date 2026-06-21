@@ -5,11 +5,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl git ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# gitleaks
-RUN GITLEAKS_VER=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
-        | grep '"tag_name"' | cut -d'"' -f4 | tr -d v) && \
-    curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VER}/gitleaks_${GITLEAKS_VER}_linux_x64.tar.gz" \
-        | tar -xz -C /usr/local/bin gitleaks
+# gitleaks (pinned — avoids GitHub API rate-limit in CI)
+ARG GITLEAKS_VERSION=8.21.2
+RUN curl -sSfL \
+      "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+      | tar -xz -C /usr/local/bin gitleaks
 
 # trivy
 RUN curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
