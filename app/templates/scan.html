@@ -8,8 +8,9 @@
   <form id="scanForm" class="flex flex-col gap-4">
     <div>
       <label class="block text-sm font-semibold text-gray-700 mb-1">Repository path</label>
-      <input name="repo_path" type="text" required placeholder="/path/to/repo or ."
+      <input name="repo_path" type="text" required placeholder="/app"
              class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]" />
+      <p class="text-xs text-gray-400 mt-1">Path on this server. Use <code>/app</code> to scan this app itself, or mount a repo and enter its path.</p>
     </div>
     <div>
       <label class="block text-sm font-semibold text-gray-700 mb-1">Output directory</label>
@@ -78,6 +79,8 @@ document.getElementById('scanForm').addEventListener('submit', async (e) => {
     } else {
       document.getElementById('errorMsg').classList.remove('hidden');
     }
+    // Re-enable form so navigating back doesn't show a blank/disabled page
+    form.querySelectorAll('input,textarea,button').forEach(el => el.disabled = false);
   });
 });
 </script>
