@@ -4,6 +4,7 @@ import os
 import sqlite3
 import threading
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -11,13 +12,21 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
+from .db import init_db
 from .main import review_repo
-
-app = FastAPI(title="SecureReview")
-templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 DB_PATH = os.getenv("SECUREREVIEW_DB", "security-review/db.sqlite")
 OUTPUT_DIR = os.getenv("SECUREREVIEW_OUTPUT", "security-review")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db(DB_PATH)
+    yield
+
+
+app = FastAPI(title="SecureReview", lifespan=lifespan)
+templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 # In-memory scan state: scan_id -> {status, messages, result}
 _scans: dict[str, dict] = {}
