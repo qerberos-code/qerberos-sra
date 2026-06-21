@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Findings — SecureReview{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+  <h1 class="text-2xl font-bold">Findings</h1>
+  <a href="/scan" class="btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-500">+ New Scan</a>
+</div>
+
+<!-- Filters -->
+<form method="get" class="flex flex-wrap gap-2 mb-5">
+  <select name="severity" class="border rounded-lg px-3 py-2 text-sm bg-white min-h-[44px]">
+    <option value="">All severities</option>
+    {% for s in severity_order %}
+    <option value="{{ s }}" {% if filter_severity == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="owasp" class="border rounded-lg px-3 py-2 text-sm bg-white min-h-[44px]">
+    <option value="">All OWASP</option>
+    {% for o in owasp_options %}
+    <option value="{{ o }}" {% if filter_owasp == o %}selected{% endif %}>{{ o }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="border rounded-lg px-3 py-2 text-sm bg-white min-h-[44px]">
+    <option value="">All statuses</option>
+    <option value="open" {% if filter_status == 'open' %}selected{% endif %}>Open</option>
+    <option value="fixed" {% if filter_status == 'fixed' %}selected{% endif %}>Fixed</option>
+    <option value="false_positive" {% if filter_status == 'false_positive' %}selected{% endif %}>False positive</option>
+  </select>
+  <button type="submit" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-700 min-h-[44px]">Filter</button>
+  <a href="/findings" class="px-4 py-2 text-sm text-gray-500 hover:text-gray-800 flex items-center min-h-[44px]">Clear</a>
+</form>
+
+{% if findings %}
+<!-- Mobile: card list -->
+<div class="flex flex-col gap-3 sm:hidden">
+  {% for f in findings %}
+  <a href="/findings/{{ f.id }}" class="bg-white rounded-xl shadow p-4 flex flex-col gap-1 hover:shadow-md transition">
+    <div class="flex items-center gap-2">
+      <span class="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+            style="background-color: {{ severity_colors[f.severity] }}">{{ f.severity }}</span>
+      <span class="text-xs text-gray-400">{{ f.owasp or '' }}</span>
+    </div>
+    <div class="font-semibold text-sm">{{ f.title }}</div>
+    <div class="text-xs text-gray-500">{{ f.file }}{% if f.line %}:{{ f.line }}{% endif %}</div>
+    <div class="text-xs text-gray-400">{{ f.tool }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Desktop: table -->
+<div class="hidden sm:block overflow-x-auto">
+  <table class="w-full text-sm bg-white rounded-xl shadow overflow-hidden">
+    <thead class="bg-gray-100 text-left text-xs uppercase text-gray-500">
+      <tr>
+        <th class="px-4 py-3">Severity</th>
+        <th class="px-4 py-3">Title</th>
+        <th class="px-4 py-3">File</th>
+        <th class="px-4 py-3">OWASP</th>
+        <th class="px-4 py-3">Tool</th>
+        <th class="px-4 py-3">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for f in findings %}
+      <tr class="hover:bg-gray-50 cursor-pointer" onclick="location.href='/findings/{{ f.id }}'">
+        <td class="px-4 py-3">
+          <span class="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                style="background-color: {{ severity_colors[f.severity] }}">{{ f.severity }}</span>
+        </td>
+        <td class="px-4 py-3 font-medium">{{ f.title }}</td>
+        <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ f.file }}{% if f.line %}:{{ f.line }}{% endif %}</td>
+        <td class="px-4 py-3 text-gray-500">{{ f.owasp or '—' }}</td>
+        <td class="px-4 py-3 text-gray-400">{{ f.tool or '—' }}</td>
+        <td class="px-4 py-3">
+          <span class="text-xs px-2 py-0.5 rounded-full
+            {% if f.status == 'fixed' %}bg-green-100 text-green-700
+            {% elif f.status == 'false_positive' %}bg-gray-100 text-gray-500
+            {% else %}bg-red-50 text-red-600{% endif %}">
+            {{ f.status }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="text-center text-gray-400 py-16">
+  <div class="text-5xl mb-3">🔍</div>
+  <p class="text-lg">No findings yet.</p>
+  <a href="/scan" class="mt-4 inline-block btn bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-500">Run your first scan</a>
+</div>
+{% endif %}
+{% endblock %}

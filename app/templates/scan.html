@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}New Scan — SecureReview{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">New Security Scan</h1>
+
+<div class="bg-white rounded-xl shadow p-5 max-w-lg">
+  <form id="scanForm" class="flex flex-col gap-4">
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Repository path</label>
+      <input name="repo_path" type="text" required placeholder="/path/to/repo or ."
+             class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]" />
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Output directory</label>
+      <input name="output_dir" type="text" value="security-review"
+             class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]" />
+    </div>
+    <div>
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Extra instructions <span class="font-normal text-gray-400">(optional)</span></label>
+      <textarea name="prompt" rows="2" placeholder="e.g. Focus on authentication code"
+                class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"></textarea>
+    </div>
+    <label class="flex items-center gap-3 cursor-pointer min-h-[44px]">
+      <input name="remediate" type="checkbox" class="w-4 h-4 rounded" />
+      <span class="text-sm font-medium text-gray-700">Auto-remediate CRITICAL / HIGH findings</span>
+    </label>
+    <button type="submit"
+            class="btn bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-500 text-sm">
+      Start Scan
+    </button>
+  </form>
+</div>
+
+<!-- Progress panel (hidden until scan starts) -->
+<div id="progressPanel" class="hidden mt-6 max-w-lg">
+  <div class="bg-gray-900 text-green-400 rounded-xl p-4 font-mono text-xs leading-relaxed overflow-y-auto max-h-72" id="logOutput">
+    Starting…
+  </div>
+  <div id="doneMsg" class="hidden mt-3 bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 font-semibold">
+    ✅ Scan complete — <a href="/findings" class="underline">View findings</a>
+  </div>
+  <div id="errorMsg" class="hidden mt-3 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 font-semibold">
+    ❌ Scan failed. Check server logs.
+  </div>
+</div>
+
+<script>
+document.getElementById('scanForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const data = new FormData(form);
+
+  // Disable form
+  form.querySelectorAll('input,textarea,button').forEach(el => el.disabled = true);
+
+  // Start scan
+  const res = await fetch('/scan', { method: 'POST', body: data });
+  const { scan_id } = await res.json();
+
+  // Show progress panel
+  const panel = document.getElementById('progressPanel');
+  const log   = document.getElementById('logOutput');
+  panel.classList.remove('hidden');
+  log.textContent = '';
+
+  // Stream SSE progress
+  const evtSource = new EventSource(`/scan/events/${scan_id}`);
+  evtSource.onmessage = (e) => {
+    log.textContent += e.data + '\n';
+    log.scrollTop = log.scrollHeight;
+  };
+  evtSource.addEventListener('complete', (e) => {
+    evtSource.close();
+    const payload = JSON.parse(e.data);
+    if (payload.status === 'done') {
+      document.getElementById('doneMsg').classList.remove('hidden');
+    } else {
+      document.getElementById('errorMsg').classList.remove('hidden');
+    }
+  });
+});
+</script>
+{% endblock %}

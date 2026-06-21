@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}SecureReview{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
+  <style>
+    /* ensure tap targets are at least 44px */
+    button, a.btn { min-height: 44px; min-width: 44px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans">
+
+  <!-- Top nav (mobile) -->
+  <nav class="bg-gray-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+    <a href="/" class="text-lg font-bold tracking-tight">🔒 SecureReview</a>
+    <div class="flex gap-4 text-sm font-medium">
+      <a href="/" class="hover:text-blue-300 py-2">Dashboard</a>
+      <a href="/findings" class="hover:text-blue-300 py-2">Findings</a>
+      <a href="/scan" class="hover:text-blue-300 py-2">Scan</a>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-4 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+</html>

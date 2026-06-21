@@ -1,0 +1,18 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      SECUREREVIEW_DB: /data/db.sqlite
+      SECUREREVIEW_OUTPUT: /data
+    volumes:
+      - securereview-data:/data
+      # Mount a repo to scan — override with: docker compose run web /bin/bash
+      # then run: uv run python -m app.main /repo
+    restart: unless-stopped
+
+volumes:
+  securereview-data:

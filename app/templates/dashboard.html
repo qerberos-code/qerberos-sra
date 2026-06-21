@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SecureReview{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Dashboard</h1>
+
+<!-- Severity cards — 2 cols on mobile, 5 on desktop -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+  {% for sev in severity_order %}
+  {% set count = counts.get(sev, 0) %}
+  <a href="/findings?severity={{ sev }}"
+     class="rounded-xl p-4 text-white text-center shadow hover:opacity-90 transition"
+     style="background-color: {{ severity_colors[sev] }}">
+    <div class="text-3xl font-extrabold">{{ count }}</div>
+    <div class="text-sm font-semibold mt-1">{{ sev }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- Close rate + charts row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+
+  <!-- Close rate gauge -->
+  <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center justify-center">
+    <div class="text-sm font-semibold text-gray-500 mb-2">Remediation Close Rate</div>
+    <canvas id="gaugeChart" width="160" height="160"></canvas>
+    <div class="text-3xl font-bold mt-2">{{ close_rate }}%</div>
+    <div class="text-xs text-gray-400 mt-1">PRs merged / total opened</div>
+  </div>
+
+  <!-- Severity donut -->
+  <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center">
+    <div class="text-sm font-semibold text-gray-500 mb-2">Severity Breakdown</div>
+    <canvas id="donutChart" width="200" height="200"></canvas>
+  </div>
+
+  <!-- 30-day trend -->
+  <div class="bg-white rounded-xl shadow p-4">
+    <div class="text-sm font-semibold text-gray-500 mb-2">30-Day Trend</div>
+    <canvas id="trendChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- OWASP bar -->
+<div class="bg-white rounded-xl shadow p-4 mb-6">
+  <div class="text-sm font-semibold text-gray-500 mb-2">OWASP Top 10 Exposure</div>
+  <canvas id="owaspChart" height="120"></canvas>
+</div>
+
+<!-- Quick links -->
+<div class="flex gap-3 flex-wrap">
+  <a href="/findings" class="btn bg-gray-900 text-white px-5 py-3 rounded-lg font-semibold hover:bg-gray-700 flex items-center">
+    View All Findings →
+  </a>
+  <a href="/scan" class="btn bg-blue-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-blue-500 flex items-center">
+    + New Scan
+  </a>
+</div>
+
+<script>
+const SEV_COLORS = {{ severity_colors | tojson }};
+const SEV_ORDER  = {{ severity_order | tojson }};
+
+// Gauge (doughnut showing close rate)
+new Chart(document.getElementById('gaugeChart'), {
+  type: 'doughnut',
+  data: {
+    datasets: [{
+      data: [{{ close_rate }}, {{ 100 - close_rate }}],
+      backgroundColor: ['#22c55e', '#e5e7eb'],
+      borderWidth: 0,
+    }]
+  },
+  options: {
+    cutout: '70%',
+    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+    rotation: -90, circumference: 180,
+  }
+});
+
+// Severity donut
+fetch('/api/severity').then(r => r.json()).then(data => {
+  new Chart(document.getElementById('donutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: data.map(d => d.label),
+      datasets: [{ data: data.map(d => d.value), backgroundColor: data.map(d => d.color), borderWidth: 2 }]
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+  });
+});
+
+// 30-day trend
+fetch('/api/trend').then(r => r.json()).then(rows => {
+  const days = [...new Set(rows.map(r => r.day))].sort();
+  const datasets = SEV_ORDER.map(sev => ({
+    label: sev,
+    data: days.map(d => { const r = rows.find(x => x.day === d && x.severity === sev); return r ? r.n : 0; }),
+    borderColor: SEV_COLORS[sev],
+    backgroundColor: SEV_COLORS[sev] + '33',
+    tension: 0.3,
+    fill: false,
+    pointRadius: 2,
+  }));
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: { labels: days, datasets },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: { x: { ticks: { maxTicksLimit: 7, font: { size: 10 } } }, y: { beginAtZero: true } }
+    }
+  });
+});
+
+// OWASP horizontal bar
+fetch('/api/owasp').then(r => r.json()).then(data => {
+  new Chart(document.getElementById('owaspChart'), {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.owasp),
+      datasets: [{ label: 'Findings', data: data.map(d => d.n), backgroundColor: '#3b82f6' }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+});
+</script>
+{% endblock %}
