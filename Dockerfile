@@ -29,9 +29,6 @@ RUN uv sync --no-install-project
 COPY . .
 RUN uv sync
 
-# Persist DB and reports on a volume
-VOLUME ["/app/security-review"]
-
 EXPOSE 8000
 
 CMD ["uv", "run", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]
