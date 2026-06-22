@@ -1,5 +1,6 @@
 import json
 import sys
+import time
 
 import anthropic
 
@@ -21,13 +22,23 @@ def run_agent(
     messages = [{"role": "user", "content": initial_message}]
 
     for _ in range(max_iterations):
-        response = client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            system=system_prompt,
-            tools=tool_specs,
-            messages=messages,
-        )
+        # Retry on rate limit with exponential backoff
+        for attempt in range(6):
+            try:
+                response = client.messages.create(
+                    model=model,
+                    max_tokens=max_tokens,
+                    system=system_prompt,
+                    tools=tool_specs,
+                    messages=messages,
+                )
+                break
+            except anthropic.RateLimitError:
+                wait = 10 * (2 ** attempt)
+                print(f"  Rate limit hit — retrying in {wait}s…", file=sys.stderr)
+                time.sleep(wait)
+        else:
+            raise RuntimeError("Rate limit: exhausted retries. Add API credits at console.anthropic.com")
 
         messages.append({"role": "assistant", "content": response.content})
 

@@ -27,9 +27,12 @@ _ALL_AGENTS = [
 def _run_subagents_parallel(
     client: anthropic.Anthropic,
     repo_path: str,
-    max_workers: int = 4,
+    max_workers: int | None = None,
 ) -> dict[str, dict]:
-    """Fire all sub-agents in parallel threads. Returns {AgentName: findings_dict}."""
+    """Run sub-agents, throttled by MAX_AGENT_WORKERS from config."""
+    if max_workers is None:
+        max_workers = config.MAX_AGENT_WORKERS
+
     instances = [cls() for cls in _ALL_AGENTS]
     results: dict[str, dict] = {}
 
