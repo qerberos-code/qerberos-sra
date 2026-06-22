@@ -71,16 +71,23 @@ def run_agent(
 def _parse_json_response(text: str) -> dict:
     """Extract JSON from an agent's final text response.
 
-    Agents may wrap JSON in markdown fences; this strips them before parsing.
-    Returns a stub dict with an error field if parsing fails.
+    Searches for a ```json ... ``` block anywhere in the text, then falls
+    back to finding the first { ... } span. Returns a stub on failure.
     """
-    stripped = text.strip()
-    if stripped.startswith("```"):
-        lines = stripped.splitlines()
-        # drop opening fence (```json or ```) and closing fence
-        inner = "\n".join(lines[1:-1]) if lines[-1].startswith("```") else "\n".join(lines[1:])
-        stripped = inner.strip()
+    import re
+
+    # Try fenced block first (```json ... ``` or ``` ... ```)
+    fence = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if fence:
+        candidate = fence.group(1)
+    else:
+        # Find the first { and last } in the whole response
+        start = text.find("{")
+        end = text.rfind("}")
+        candidate = text[start:end + 1] if start != -1 and end != -1 else text
+
     try:
-        return json.loads(stripped)
-    except json.JSONDecodeError as exc:
+        return json.loads(candidate)
+    except (json.JSONDecodeError, ValueError) as exc:
+        print(f"  [parse] failed: {exc} — raw[:200]: {text[:200]}", file=sys.stderr)
         return {"findings": [], "error": str(exc), "raw": text[:500]}

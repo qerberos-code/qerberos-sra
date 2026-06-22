@@ -27,8 +27,12 @@ def review_repo(
         db_path = f"{output_dir}/db.sqlite"
     init_db(db_path)
 
-    print("Running sub-agents in parallel…", file=sys.stderr)
+    print("Running sub-agents…", file=sys.stderr)
     subagent_results = _run_subagents_parallel(client, repo_path)
+    for name, r in subagent_results.items():
+        n = len(r.get("findings", []))
+        err = r.get("error", "")
+        print(f"  {name}: {n} finding(s){' — ERROR: ' + err[:120] if err else ''}", file=sys.stderr)
 
     print("Manager synthesizing findings…", file=sys.stderr)
     summary = ReviewManager().orchestrate(
